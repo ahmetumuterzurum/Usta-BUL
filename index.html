@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#12345a">
+  <meta name="description" content="Türkiye genelinde güvenilir hizmet ustalarını bulun.">
+  <title>USTA BUL | İşinin ustası burada</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <style>
+    :root{--navy:#12345a;--blue:#1769aa;--orange:#f28c28;--bg:#f4f7fb;--ink:#172536;--muted:#65758a;--line:#e2e8f0}
+    *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+    header{background:linear-gradient(125deg,#102b4c,#1769aa);color:white;padding:18px 16px 24px}
+    .wrap{max-width:980px;margin:auto}.top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .logo{font-weight:900;letter-spacing:1.5px;font-size:22px}.tag{font-size:12px;background:#ffffff20;border:1px solid #ffffff55;border-radius:20px;padding:6px 10px}
+    h1{font-size:clamp(26px,6vw,40px);line-height:1.1;margin:28px 0 8px}header p{margin:0;color:#dceafa}
+    .search{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-top:22px}
+    input,select,textarea{font:inherit;border:1px solid var(--line);border-radius:12px;padding:12px;background:white;color:var(--ink);width:100%;min-width:0}
+    button,.btn{font:inherit;border:0;border-radius:12px;padding:12px 16px;background:var(--orange);color:#241707;font-weight:750;cursor:pointer}
+    button.secondary{background:#eaf1f8;color:var(--navy);border:1px solid #d7e2ee}
+    main{padding:20px 16px 90px}.section{margin:22px 0}.section h2{font-size:19px;margin:0 0 12px}
+    .cats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+    .cat{background:white;border:1px solid var(--line);border-radius:14px;padding:14px 8px;text-align:center;cursor:pointer;font-weight:700}
+    .cat span{display:block;font-size:25px;margin-bottom:5px}
+    .filters{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+    .filters select{flex:1;min-width:130px}
+    .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+    .card{background:white;border:1px solid var(--line);border-radius:16px;padding:15px;box-shadow:0 3px 14px #102b4c0a}
+    .cardtop{display:flex;justify-content:space-between;gap:8px}.name{font-weight:800;font-size:17px}
+    .pill{font-size:11px;background:#edf5ff;color:#15558e;padding:5px 8px;border-radius:20px;white-space:nowrap}
+    .muted{color:var(--muted);font-size:13px}.desc{font-size:14px;line-height:1.45;min-height:40px}
+    .actions{display:flex;gap:8px;margin-top:12px}.actions button{flex:1;padding:10px;font-size:13px}
+    .empty{background:white;border:1px dashed #bdcbd9;border-radius:14px;padding:22px;text-align:center;color:var(--muted)}
+    .panel{background:white;border:1px solid var(--line);border-radius:16px;padding:16px}
+    .formgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.formgrid .full{grid-column:1/-1}
+    nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:center;z-index:5}
+    nav .inner{max-width:980px;width:100%;display:grid;grid-template-columns:repeat(4,1fr)}
+    nav button{background:white;color:var(--muted);border-radius:0;padding:12px 4px;font-size:12px}
+    nav button.active{color:var(--blue);background:#f1f7fd}
+    .notice{font-size:12px;color:var(--muted);line-height:1.5;margin-top:12px}
+    .hidden{display:none!important}
+    @media(max-width:560px){.search{grid-template-columns:1fr}.cats{grid-template-columns:repeat(2,1fr)}.formgrid{grid-template-columns:1fr}.formgrid .full{grid-column:auto}}
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="top"><div class="logo">🔧 USTA BUL</div><div class="tag">Türkiye genelinde</div></div>
+    <h1>İşinin ustası,<br>bir dokunuş uzağında.</h1>
+    <p>İhtiyacına uygun hizmet ustasını bul, doğrudan iletişime geç.</p>
+    <div class="search">
+      <input id="q" placeholder="Örn. kombi tamiri, tesisatçı">
+      <select id="city"><option value="">Tüm şehirler</option></select>
+      <button id="searchBtn">Usta ara</button>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+  <section id="homeView">
+    <div class="section">
+      <h2>Hizmet kategorileri</h2>
+      <div class="cats" id="categories"></div>
+    </div>
+    <div class="section">
+      <h2 id="listTitle">Örnek ustalar</h2>
+      <div class="filters">
+        <select id="categoryFilter"><option value="">Tüm hizmetler</option></select>
+        <select id="sort"><option value="name">İsme göre</option><option value="city">Şehre göre</option></select>
+      </div>
+      <div class="cards" id="cards"></div>
+      <p class="notice">Bu başlangıç sürümünde görünen ustalar örnek kayıtlardır; gerçek işletme veya doğrulanmış hizmet sağlayıcı değildir.</p>
+    </div>
+  </section>
+
+  <section id="favoritesView" class="hidden">
+    <div class="section"><h2>Favorilerim</h2><div class="cards" id="favorites"></div></div>
+  </section>
+
+  <section id="registerView" class="hidden">
+    <div class="section">
+      <h2>Usta başvurusu</h2>
+      <div class="panel">
+        <form id="joinForm">
+          <div class="formgrid">
+            <input name="name" placeholder="Adınız ve soyadınız" required>
+            <input name="phone" placeholder="Telefon numaranız" type="tel" required>
+            <select name="category" required><option value="">Hizmet kategorisi seçin</option></select>
+            <select name="city" required><option value="">Şehir seçin</option></select>
+            <input class="full" name="district" placeholder="İlçe">
+            <textarea class="full" name="description" rows="3" placeholder="Hizmetlerinizi kısaca anlatın" required></textarea>
+            <button class="full" type="submit">Başvuru taslağını oluştur</button>
+          </div>
+        </form>
+        <p class="notice">Bu demo başvuruyu yalnızca bu cihazda saklar. Henüz sunucuya gönderim, kimlik doğrulama veya yönetici onayı yoktur. Yayına almadan önce gerçek başvuru altyapısı kurulmalıdır.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="accountView" class="hidden">
+    <div class="section"><h2>Hesabım</h2><div class="panel">
+      <p><b>USTA BUL</b> başlangıç sürümüne hoş geldin.</p>
+      <p class="muted">Üyelik, güvenli giriş, mesajlaşma ve ödeme özellikleri sonraki geliştirme aşamasında sunucu altyapısıyla eklenecek.</p>
+      <button class="secondary" id="installBtn">Ana ekrana yükleme bilgisi</button>
+      <p class="notice" id="installHelp">iPhone: Safari'de Paylaş → Ana Ekrana Ekle. Android: Tarayıcı menüsü → Ana ekrana ekle / Uygulamayı yükle.</p>
+    </div></div>
+  </section>
+</main>
+<nav><div class="inner">
+  <button class="active" data-view="home">⌂<br>Ana Sayfa</button>
+  <button data-view="favorites">♡<br>Favoriler</button>
+  <button data-view="register">＋<br>Usta ol</button>
+  <button data-view="account">☻<br>Hesabım</button>
+</div></nav>
+<script>
+const cities=["Adana","Adıyaman","Afyonkarahisar","Ağrı","Amasya","Ankara","Antalya","Artvin","Aydın","Balıkesir","Bilecik","Bingöl","Bitlis","Bolu","Burdur","Bursa","Çanakkale","Çankırı","Çorum","Denizli","Diyarbakır","Edirne","Elazığ","Erzincan","Erzurum","Eskişehir","Gaziantep","Giresun","Gümüşhane","Hakkari","Hatay","Isparta","Mersin","İstanbul","İzmir","Kars","Kastamonu","Kayseri","Kırklareli","Kırşehir","Kocaeli","Konya","Kütahya","Malatya","Manisa","Kahramanmaraş","Mardin","Muğla","Muş","Nevşehir","Niğde","Ordu","Rize","Sakarya","Samsun","Siirt","Sinop","Sivas","Tekirdağ","Tokat","Trabzon","Tunceli","Şanlıurfa","Uşak","Van","Yozgat","Zonguldak","Aksaray","Bayburt","Karaman","Kırıkkale","Batman","Şırnak","Bartın","Ardahan","Iğdır","Yalova","Karabük","Kilis","Osmaniye","Düzce"];
+const cats=[["Su tesisatçısı","🚰"],["Elektrikçi","⚡"],["Kombi ustası","🔥"],["Klima ustası","❄️"],["Boyacı","🖌️"],["Marangoz","🪚"],["Çilingir","🔑"],["Beyaz eşya servisi","🧺"],["Temizlik hizmeti","🧹"]];
+let pros=[
+{id:1,name:"Örnek Tesisat Ustası",category:"Su tesisatçısı",city:"Bursa",district:"Nilüfer",phone:"905550000001",desc:"Su tesisatı bakım ve onarım hizmeti için örnek profil."},
+{id:2,name:"Örnek Elektrik Ustası",category:"Elektrikçi",city:"İstanbul",district:"Kadıköy",phone:"905550000002",desc:"Elektrik arıza ve montaj hizmeti için örnek profil."},
+{id:3,name:"Örnek Kombi Ustası",category:"Kombi ustası",city:"Ankara",district:"Çankaya",phone:"905550000003",desc:"Kombi bakım ve arıza hizmeti için örnek profil."}
+];
+let favorites=JSON.parse(localStorage.getItem("ub_favs")||"[]"), activeCategory="";
+const $=id=>document.getElementById(id);
+function fillSelect(el,items,first){el.innerHTML=`<option value="">${first}</option>`+items.map(x=>`<option>${x}</option>`).join("")}
+fillSelect($("city"),cities,"Tüm şehirler");fillSelect($("categoryFilter"),cats.map(c=>c[0]),"Tüm hizmetler");
+document.querySelectorAll('select[name="city"]').forEach(x=>fillSelect(x,cities,"Şehir seçin"));
+document.querySelectorAll('select[name="category"]').forEach(x=>fillSelect(x,cats.map(c=>c[0]),"Hizmet kategorisi seçin"));
+$("categories").innerHTML=cats.map(c=>`<button class="cat" data-cat="${c[0]}"><span>${c[1]}</span>${c[0]}</button>`).join("");
+function card(p){return `<article class="card"><div class="cardtop"><div class="name">${esc(p.name)}</div><span class="pill">${esc(p.category)}</span></div><p class="muted">📍 ${esc(p.district||"")} ${esc(p.city||"")}</p><p class="desc">${esc(p.desc||"")}</p><div class="actions"><button onclick="contact('${p.phone}')">Ara / WhatsApp</button><button class="secondary" onclick="toggleFav(${p.id})">${favorites.includes(p.id)?"♥":"♡"} Kaydet</button></div></article>`}
+function esc(s){return String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function render(){
+let q=$("q").value.toLocaleLowerCase("tr"), city=$("city").value, cat=$("categoryFilter").value||activeCategory;
+let list=pros.filter(p=>(!q||(p.name+" "+p.category+" "+p.desc).toLocaleLowerCase("tr").includes(q))&&(!city||p.city===city)&&(!cat||p.category===cat));
+if($("sort").value==="city")list.sort((a,b)=>a.city.localeCompare(b.city,"tr"));else list.sort((a,b)=>a.name.localeCompare(b.name,"tr"));
+$("cards").innerHTML=list.length?list.map(card).join(""):'<div class="empty">Aramana uygun usta bulunamadı.</div>';
+$("favorites").innerHTML=pros.filter(p=>favorites.includes(p.id)).map(card).join("")||'<div class="empty">Henüz favori ustanız yok.</div>';
+}
+function contact(phone){let clean=String(phone||"").replace(/\D/g,"");if(!clean)return alert("Bu örnek profilde telefon bilgisi bulunmuyor.");location.href="https://wa.me/"+clean}
+function toggleFav(id){favorites=favorites.includes(id)?favorites.filter(x=>x!==id):[...favorites,id];localStorage.setItem("ub_favs",JSON.stringify(favorites));render()}
+window.contact=contact;window.toggleFav=toggleFav;
+function view(v){["home","favorites","register","account"].forEach(x=>$(x+"View").classList.toggle("hidden",x!==v));document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.view===v));if(v==="favorites")render()}
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>view(b.dataset.view));
+$("categories").onclick=e=>{let b=e.target.closest("[data-cat]");if(b){activeCategory=b.dataset.cat;$("categoryFilter").value=activeCategory;render();$("listTitle").textContent=activeCategory+" ustaları";$("cards").scrollIntoView({behavior:"smooth"})}};
+["searchBtn","categoryFilter","city","sort"].forEach(id=>$(id).addEventListener(id==="searchBtn"?"click":"change",render));
+$("q").addEventListener("input",render);
+$("joinForm").onsubmit=e=>{e.preventDefault();let d=Object.fromEntries(new FormData(e.target));let requests=JSON.parse(localStorage.getItem("ub_requests")||"[]");requests.push({...d,createdAt:new Date().toISOString()});localStorage.setItem("ub_requests",JSON.stringify(requests));alert("Başvuru taslağın bu cihazda kaydedildi. Henüz yayınlanmış bir başvuru değildir.");e.target.reset()};
+$("installBtn").onclick=()=>alert("iPhone: Safari Paylaş simgesi → Ana Ekrana Ekle. Android: Tarayıcı menüsü → Ana ekrana ekle.");
+if("serviceWorker" in navigator && location.protocol.startsWith("http"))navigator.serviceWorker.register("./sw.js").catch(()=>{});
+render();
+</script>
+</body></html>
