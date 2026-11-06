@@ -91,7 +91,7 @@
             <button class="full" type="submit">Başvuru taslağını oluştur</button>
           </div>
         </form>
-        <p class="notice">Başvurun güvenli bağlantı üzerinden USTA BUL veritabanına gönderilir. Başvurular yönetici onayına kadar beklemede kalır.</p>
+        <p class="notice">Başvurun gönderildiğinde USTA BUL veritabanına kaydedilir. Başvurular yönetici onayına kadar beklemede kalır.</p>
         <p id="formStatus" class="notice" role="status" aria-live="polite"></p>
       </div>
     </div>
@@ -112,15 +112,30 @@
   <button data-view="register">＋<br>Usta ol</button>
   <button data-view="account">☻<br>Hesabım</button>
 </div></nav>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL = "https://yoldievplsmiehtutuls.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_WEvIbSxWCXuzFQ1ah1WJ4A_UkeXYwcU";
-const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let db = null;
+async function getDatabase(){
+  if(db) return db;
+  if(!window.supabase){
+    await new Promise((resolve,reject)=>{
+      const script=document.createElement("script");
+      script.src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+      script.onload=resolve; script.onerror=()=>reject(new Error("Veritabanı bağlantı kütüphanesi yüklenemedi."));
+      document.head.appendChild(script);
+    });
+  }
+  if(!window.supabase) throw new Error("Veritabanı bağlantısı başlatılamadı.");
+  db=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+  return db;
+}
 const cities=["Adana","Adıyaman","Afyonkarahisar","Ağrı","Amasya","Ankara","Antalya","Artvin","Aydın","Balıkesir","Bilecik","Bingöl","Bitlis","Bolu","Burdur","Bursa","Çanakkale","Çankırı","Çorum","Denizli","Diyarbakır","Edirne","Elazığ","Erzincan","Erzurum","Eskişehir","Gaziantep","Giresun","Gümüşhane","Hakkari","Hatay","Isparta","Mersin","İstanbul","İzmir","Kars","Kastamonu","Kayseri","Kırklareli","Kırşehir","Kocaeli","Konya","Kütahya","Malatya","Manisa","Kahramanmaraş","Mardin","Muğla","Muş","Nevşehir","Niğde","Ordu","Rize","Sakarya","Samsun","Siirt","Sinop","Sivas","Tekirdağ","Tokat","Trabzon","Tunceli","Şanlıurfa","Uşak","Van","Yozgat","Zonguldak","Aksaray","Bayburt","Karaman","Kırıkkale","Batman","Şırnak","Bartın","Ardahan","Iğdır","Yalova","Karabük","Kilis","Osmaniye","Düzce"];
 const cats=[["Su tesisatçısı","🚰"],["Elektrikçi","⚡"],["Kombi ustası","🔥"],["Klima ustası","❄️"],["Boyacı","🖌️"],["Marangoz","🪚"],["Çilingir","🔑"],["Beyaz eşya servisi","🧺"],["Temizlik hizmeti","🧹"]];
 let pros=[];
-let favorites=JSON.parse(localStorage.getItem("ub_favs")||"[]"), activeCategory="";
+let favorites=[];
+try { favorites=JSON.parse(localStorage.getItem("ub_favs")||"[]"); if(!Array.isArray(favorites)) favorites=[]; } catch(e) { favorites=[]; }
+let activeCategory="";
 const $=id=>document.getElementById(id);
 function fillSelect(el,items,first){el.innerHTML=`<option value="">${first}</option>`+items.map(x=>`<option>${x}</option>`).join("")}
 fillSelect($("city"),cities,"Tüm şehirler");fillSelect($("categoryFilter"),cats.map(c=>c[0]),"Tüm hizmetler");
@@ -137,7 +152,7 @@ $("cards").innerHTML=list.length?list.map(card).join(""):'<div class="empty">Ara
 $("favorites").innerHTML=pros.filter(p=>favorites.includes(p.id)).map(card).join("")||'<div class="empty">Henüz favori ustanız yok.</div>';
 }
 function contact(phone){let clean=String(phone||"").replace(/\D/g,"");if(!clean)return alert("Bu örnek profilde telefon bilgisi bulunmuyor.");location.href="https://wa.me/"+clean}
-function toggleFav(id){favorites=favorites.includes(id)?favorites.filter(x=>x!==id):[...favorites,id];localStorage.setItem("ub_favs",JSON.stringify(favorites));render()}
+function toggleFav(id){favorites=favorites.includes(id)?favorites.filter(x=>x!==id):[...favorites,id];try{localStorage.setItem("ub_favs",JSON.stringify(favorites))}catch(e){}render()}
 window.contact=contact;window.toggleFav=toggleFav;
 function view(v){["home","favorites","register","account"].forEach(x=>$(x+"View").classList.toggle("hidden",x!==v));document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.view===v));if(v==="favorites")render()}
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>view(b.dataset.view));
@@ -153,7 +168,8 @@ $("joinForm").onsubmit=async e=>{
   button.disabled=true; button.textContent="Gönderiliyor…";
   status.textContent="Başvurun gönderiliyor…";
   try {
-    const { error } = await db.from("usta_basvurulari").insert([{
+    const database = await getDatabase();
+    const { error } = await database.from("usta_basvurulari").insert([{
       ad_soyad:d.name.trim(), telefon:d.phone.trim(), kategori:d.category,
       sehir:d.city, ilce:(d.district||"").trim(), aciklama:d.description.trim()
     }]);
