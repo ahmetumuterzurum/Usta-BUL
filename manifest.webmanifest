@@ -5,6 +5,5 @@
   "display": "standalone",
   "background_color": "#f4f7fb",
   "theme_color": "#12345a",
-  "lang": "tr",
-  "description": "Türkiye genelinde hizmet ustalarını bulun."
+  "lang": "tr"
 }
