@@ -62,13 +62,13 @@
       <div class="cats" id="categories"></div>
     </div>
     <div class="section">
-      <h2 id="listTitle">Örnek ustalar</h2>
+      <h2 id="listTitle">Ustalar</h2>
       <div class="filters">
         <select id="categoryFilter"><option value="">Tüm hizmetler</option></select>
         <select id="sort"><option value="name">İsme göre</option><option value="city">Şehre göre</option></select>
       </div>
       <div class="cards" id="cards"></div>
-      <p class="notice">Bu başlangıç sürümünde görünen ustalar örnek kayıtlardır; gerçek işletme veya doğrulanmış hizmet sağlayıcı değildir.</p>
+      <p class="notice">Usta profilleri, başvurular yönetici tarafından incelenip onaylandıktan sonra burada yayınlanacaktır.</p>
     </div>
   </section>
 
@@ -91,7 +91,8 @@
             <button class="full" type="submit">Başvuru taslağını oluştur</button>
           </div>
         </form>
-        <p class="notice">Bu demo başvuruyu yalnızca bu cihazda saklar. Henüz sunucuya gönderim, kimlik doğrulama veya yönetici onayı yoktur. Yayına almadan önce gerçek başvuru altyapısı kurulmalıdır.</p>
+        <p class="notice">Başvurun güvenli bağlantı üzerinden USTA BUL veritabanına gönderilir. Başvurular yönetici onayına kadar beklemede kalır.</p>
+        <p id="formStatus" class="notice" role="status" aria-live="polite"></p>
       </div>
     </div>
   </section>
@@ -111,14 +112,14 @@
   <button data-view="register">＋<br>Usta ol</button>
   <button data-view="account">☻<br>Hesabım</button>
 </div></nav>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+const SUPABASE_URL = "https://yoldievplsmiehtutuls.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_WEvIbSxWCXuzFQ1ah1WJ4A_UkeXYwcU";
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const cities=["Adana","Adıyaman","Afyonkarahisar","Ağrı","Amasya","Ankara","Antalya","Artvin","Aydın","Balıkesir","Bilecik","Bingöl","Bitlis","Bolu","Burdur","Bursa","Çanakkale","Çankırı","Çorum","Denizli","Diyarbakır","Edirne","Elazığ","Erzincan","Erzurum","Eskişehir","Gaziantep","Giresun","Gümüşhane","Hakkari","Hatay","Isparta","Mersin","İstanbul","İzmir","Kars","Kastamonu","Kayseri","Kırklareli","Kırşehir","Kocaeli","Konya","Kütahya","Malatya","Manisa","Kahramanmaraş","Mardin","Muğla","Muş","Nevşehir","Niğde","Ordu","Rize","Sakarya","Samsun","Siirt","Sinop","Sivas","Tekirdağ","Tokat","Trabzon","Tunceli","Şanlıurfa","Uşak","Van","Yozgat","Zonguldak","Aksaray","Bayburt","Karaman","Kırıkkale","Batman","Şırnak","Bartın","Ardahan","Iğdır","Yalova","Karabük","Kilis","Osmaniye","Düzce"];
 const cats=[["Su tesisatçısı","🚰"],["Elektrikçi","⚡"],["Kombi ustası","🔥"],["Klima ustası","❄️"],["Boyacı","🖌️"],["Marangoz","🪚"],["Çilingir","🔑"],["Beyaz eşya servisi","🧺"],["Temizlik hizmeti","🧹"]];
-let pros=[
-{id:1,name:"Örnek Tesisat Ustası",category:"Su tesisatçısı",city:"Bursa",district:"Nilüfer",phone:"905550000001",desc:"Su tesisatı bakım ve onarım hizmeti için örnek profil."},
-{id:2,name:"Örnek Elektrik Ustası",category:"Elektrikçi",city:"İstanbul",district:"Kadıköy",phone:"905550000002",desc:"Elektrik arıza ve montaj hizmeti için örnek profil."},
-{id:3,name:"Örnek Kombi Ustası",category:"Kombi ustası",city:"Ankara",district:"Çankaya",phone:"905550000003",desc:"Kombi bakım ve arıza hizmeti için örnek profil."}
-];
+let pros=[];
 let favorites=JSON.parse(localStorage.getItem("ub_favs")||"[]"), activeCategory="";
 const $=id=>document.getElementById(id);
 function fillSelect(el,items,first){el.innerHTML=`<option value="">${first}</option>`+items.map(x=>`<option>${x}</option>`).join("")}
@@ -143,7 +144,29 @@ document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>view(b.dataset.
 $("categories").onclick=e=>{let b=e.target.closest("[data-cat]");if(b){activeCategory=b.dataset.cat;$("categoryFilter").value=activeCategory;render();$("listTitle").textContent=activeCategory+" ustaları";$("cards").scrollIntoView({behavior:"smooth"})}};
 ["searchBtn","categoryFilter","city","sort"].forEach(id=>$(id).addEventListener(id==="searchBtn"?"click":"change",render));
 $("q").addEventListener("input",render);
-$("joinForm").onsubmit=e=>{e.preventDefault();let d=Object.fromEntries(new FormData(e.target));let requests=JSON.parse(localStorage.getItem("ub_requests")||"[]");requests.push({...d,createdAt:new Date().toISOString()});localStorage.setItem("ub_requests",JSON.stringify(requests));alert("Başvuru taslağın bu cihazda kaydedildi. Henüz yayınlanmış bir başvuru değildir.");e.target.reset()};
+$("joinForm").onsubmit=async e=>{
+  e.preventDefault();
+  const form=e.currentTarget;
+  const button=form.querySelector('button[type="submit"]');
+  const status=$("formStatus");
+  const d=Object.fromEntries(new FormData(form));
+  button.disabled=true; button.textContent="Gönderiliyor…";
+  status.textContent="Başvurun gönderiliyor…";
+  try {
+    const { error } = await db.from("usta_basvurulari").insert([{
+      ad_soyad:d.name.trim(), telefon:d.phone.trim(), kategori:d.category,
+      sehir:d.city, ilce:(d.district||"").trim(), aciklama:d.description.trim()
+    }]);
+    if(error) throw error;
+    status.textContent="Başvurun başarıyla alındı. Yönetici incelemesinden sonra yayınlanacak.";
+    form.reset();
+  } catch(err) {
+    console.error("USTA BUL başvuru hatası:",err);
+    status.textContent="Başvuru gönderilemedi. Bağlantı veya veritabanı izinlerini kontrol et. Hata: "+(err.message||"Bilinmeyen hata");
+  } finally {
+    button.disabled=false; button.textContent="Başvuruyu gönder";
+  }
+};
 $("installBtn").onclick=()=>alert("iPhone: Safari Paylaş simgesi → Ana Ekrana Ekle. Android: Tarayıcı menüsü → Ana ekrana ekle.");
 if("serviceWorker" in navigator && location.protocol.startsWith("http"))navigator.serviceWorker.register("./sw.js").catch(()=>{});
 render();
